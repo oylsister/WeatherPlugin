@@ -1,4 +1,6 @@
-﻿using CounterStrikeSharp.API.Core;
+﻿using System.Runtime.CompilerServices;
+using CounterStrikeSharp.API;
+using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Utils;
@@ -30,31 +32,36 @@ public class WeatherPlugin : BasePlugin, IPluginConfig<APIConfigs>
 
     [CommandHelper(1, "css_weather <city name>")]
     [ConsoleCommand("css_weather")]
-    public void WeatherCommandAsync(CCSPlayerController? player, CommandInfo info)
+    public async void WeatherCommandAsync(CCSPlayerController? player, CommandInfo info)
     {
-        var response = _weatherClient.GetWeatherCity(info.GetArg(1));
+        var response = await _weatherClient.GetWeatherCity(info.GetArg(1));
 
-        if (response.Result == null)
+        if (response == null)
         {
             info.ReplyToCommand($"[Weather] result is null!");
             return;
         }
 
-        var data = response.Result;
+        var data = response;
 
-        if (data.Status != 200)
-        {
-            info.ReplyToCommand($"{ChatColors.DarkRed}####### WEATHER ERROR #######");
-            info.ReplyToCommand($"Status Code: {data.Status}");
-            info.ReplyToCommand($"Reason: {data.Message}");
-            return;
-        }
+        Server.NextFrame(() => {
+            if (player == null)
+                return;
 
-        //info.ReplyToCommand($"Status Code: {result["cod"]}");
-        info.ReplyToCommand($"{ChatColors.Green}####### WEATHER #######");
-        info.ReplyToCommand($"{ChatColors.Lime}Location: {ChatColors.Default}{data.City}, {data.Country} {data.CountryShort}");
-        info.ReplyToCommand($"{ChatColors.Lime}Temperature: {ChatColors.Default}{data.Temperature}°C | Feels like: {data.FeelTemperature}°C");
-        info.ReplyToCommand($"{ChatColors.Lime}Weather: {ChatColors.Default}{data.Weather}, {data.WeatherDescription}");
+            if (data.Status != 200)
+            {
+                player.PrintToChat($" {ChatColors.DarkRed}####### WEATHER ERROR #######");
+                player.PrintToChat($"Status Code: {data.Status}");
+                player.PrintToChat($"Reason: {data.Message}");
+                return;
+            }
+
+            //info.ReplyToCommand($"Status Code: {result["cod"]}");
+            player.PrintToChat($" {ChatColors.Green}####### WEATHER #######");
+            player.PrintToChat($" {ChatColors.Lime}Location: {ChatColors.Default}{data.City}, {data.Country} {data.CountryShort}");
+            player.PrintToChat($" {ChatColors.Lime}Temperature: {ChatColors.Default}{data.Temperature}°C | Feels like: {data.FeelTemperature}°C");
+            player.PrintToChat($" {ChatColors.Lime}Weather: {ChatColors.Default}{data.Weather}, {data.WeatherDescription}");
+        });
     }
 }
 
